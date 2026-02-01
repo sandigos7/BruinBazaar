@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // UCLA-only: require auth and UCLA email domain
+    function isUCLAUser() {
+      return request.auth != null &&
+        (request.auth.token.email.matches('.*@ucla\\.edu$') ||
+         request.auth.token.email.matches('.*@g\\.ucla\\.edu$'));
+    }
+
+    // Listing photos: listings/{userId}/{allPaths}
+    // Read: any UCLA user; Write: owner only, max 5MB, images only
+    match /listings/{userId}/{allPaths=**} {
+      allow read: if isUCLAUser();
+      allow write: if isUCLAUser() &&
+        request.auth.uid == userId &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    // Profile avatars: avatars/{userId}
+    // Read: any UCLA user; Write: owner only, max 2MB, images only
+    match /avatars/{userId} {
+      allow read: if isUCLAUser();
+      allow write: if isUCLAUser() &&
+        request.auth.uid == userId &&
+        request.resource.size < 2 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+  }
+}
