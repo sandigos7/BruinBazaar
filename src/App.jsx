@@ -1,9 +1,72 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
+import { useState } from 'react';
 
-// Placeholder pages (you'll build these next)
+// Placeholder pages 
 function HomePage() {
-  return <div className="p-4">Home - Bulletin Board</div>;
+  const [emojis, setEmojis] = useState([]);
+  
+  const randomEmojis = ['🐻', '💙', '💛', '🏈', '📚', '🎓', '✨', '🎉', '🔥', '⚡', '🌟', '💫', '🚀', '🎯'];
+  
+  const spawnEmojis = () => {
+    const newEmojis = Array.from({ length: 8 }, (_, i) => ({
+      id: Date.now() + i,
+      emoji: randomEmojis[Math.floor(Math.random() * randomEmojis.length)],
+      left: Math.random() * 80 + 10, // 10-90% from left
+      duration: Math.random() * 2 + 2, // 2-4 seconds
+    }));
+    
+    setEmojis(prev => [...prev, ...newEmojis]);
+    
+    // Remove emojis after animation
+    setTimeout(() => {
+      setEmojis(prev => prev.filter(e => !newEmojis.find(ne => ne.id === e.id)));
+    }, 4000);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-ucla-blue to-blue-700 relative overflow-hidden">
+      {/* Floating emojis */}
+      {emojis.map(({ id, emoji, left, duration }) => (
+        <div
+          key={id}
+          className="absolute text-4xl pointer-events-none animate-float"
+          style={{
+            left: `${left}%`,
+            bottom: '10%',
+            animation: `float ${duration}s ease-out forwards`,
+          }}
+        >
+          {emoji}
+        </div>
+      ))}
+
+      <div className="text-center z-10">
+        <h1 className="text-5xl font-bold text-white mb-4">
+          🎉 You've Logged In! 🎉
+        </h1>
+        <p className="text-xl text-ucla-gold mb-8 max-w-md">
+          Eventually an epic UCLA marketplace will be here!
+        </p>
+        <p className="text-white mb-8 opacity-80">
+          But for now...
+        </p>
+        
+        <button
+          onClick={spawnEmojis}
+          className="bg-ucla-gold text-ucla-blue font-bold py-4 px-8 rounded-lg text-xl hover:bg-yellow-300 transform hover:scale-105 transition-all shadow-lg"
+        >
+          Click for Magic ✨
+        </button>
+        
+        <p className="text-white text-sm mt-8 opacity-60">
+          (Your designer is cooking up something amazing in Figma)
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function SearchPage() {
@@ -22,13 +85,6 @@ function ProfilePage() {
   return <div className="p-4">Profile</div>;
 }
 
-function LoginPage() {
-  return <div className="p-4">Login</div>;
-}
-
-function SignUpPage() {
-  return <div className="p-4">Sign Up</div>;
-}
 
 // Protected route wrapper (requires auth + email verification per PRD)
 function ProtectedRoute({ children }) {
