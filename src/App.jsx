@@ -100,10 +100,38 @@ function ProtectedRoute({ children }) {
 
   if (!isEmailVerified) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="max-w-md bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">📧</span>
+          </div>
           <h2 className="text-xl font-bold mb-2">Email Verification Required</h2>
-          <p>Please check your email and verify your account to continue.</p>
+          <p className="text-gray-600 mb-6">
+            Please check your email and verify your account to continue.
+          </p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-ucla-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            >
+              I've Verified - Refresh Page
+            </button>
+            
+            <button
+              onClick={async () => {
+                await signOut();
+                window.location.href = '/login';
+              }}
+              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition"
+            >
+              Back to Login
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-4">
+            Didn't receive the email? Check your spam folder.
+          </p>
         </div>
       </div>
     );
