@@ -3,6 +3,9 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        brand: ['\"Alfa Slab One\"', 'ui-serif', 'Georgia', 'serif'],
+      },
       colors: {
         'ucla-blue': '#2774AE',
         'ucla-gold': '#FFD100',
