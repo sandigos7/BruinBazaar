@@ -3,155 +3,274 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { validateUCLAEmail } from '../services/authService';
 
-export default function SignUpPage() {
+const BG_IMAGE = 'https://www.figma.com/api/mcp/asset/fed63983-c0a4-4735-ad69-b7ffde3bcab8';
+
+const styles = {
+  root: {
+    position: 'relative',
+    minHeight: '100vh',
+    maxWidth: 480,
+    margin: '0 auto',
+    overflow: 'hidden',
+    backgroundColor: '#1a2a3a',
+    fontFamily: 'Inter, sans-serif',
+  },
+  bg: {
+    position: 'absolute',
+    inset: 0,
+    backgroundImage: `url(${BG_IMAGE})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center top',
+    zIndex: 0,
+  },
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(0,0,0,0.50)',
+    zIndex: 1,
+  },
+  inner: {
+    position: 'relative',
+    zIndex: 2,
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  hero: {
+    padding: '48px 28px 0',
+    flex: 1,
+  },
+  logo: {
+    fontFamily: "'Jomhuria', serif",
+    fontSize: 72,
+    color: '#fff',
+    lineHeight: 1,
+    margin: '0 0 12px',
+    display: 'block',
+  },
+  tagline: {
+    fontFamily: "'Jost', sans-serif",
+    fontSize: 26,
+    fontWeight: 400,
+    color: '#fff',
+    lineHeight: 1.3,
+    margin: 0,
+  },
+  card: {
+    background: '#fff',
+    borderRadius: '32px 32px 0 0',
+    padding: '28px 24px 40px',
+    boxShadow: '0 -8px 32px rgba(0,0,0,0.18)',
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: '#1e1e1e',
+    textAlign: 'center',
+    margin: '0 0 20px',
+  },
+  label: {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#1e1e1e',
+    marginBottom: 6,
+  },
+  input: {
+    width: '100%',
+    height: 44,
+    background: '#f2f2f2',
+    border: '0.8px solid #ebebeb',
+    borderRadius: 10,
+    padding: '0 12px',
+    fontSize: 13,
+    color: '#1e1e1e',
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: 'Inter, sans-serif',
+    transition: 'border-color 0.15s',
+  },
+  btnPrimary: {
+    width: '100%',
+    height: 46,
+    background: '#2774ae',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'Inter, sans-serif',
+    marginTop: 4,
+  },
+  error: {
+    background: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: 8,
+    padding: '8px 12px',
+    fontSize: 12,
+    color: '#dc2626',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  termsText: {
+    fontSize: 9,
+    color: '#858585',
+    textAlign: 'center',
+    marginTop: 14,
+    lineHeight: 1.5,
+    fontWeight: 600,
+  },
+};
+
+const focusStyle = (e) => (e.target.style.borderColor = '#2774ae');
+const blurStyle = (e) => (e.target.style.borderColor = '#ebebeb');
+
+// ─── Step 1: Account details ──────────────────────────────────────────────────
+function StepForm({ onNext }) {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [validationError, setValidationError] = useState('');
-  const [verificationSent, setVerificationSent] = useState(false);
-  const { signUp, sendEmailVerification, error, clearError } = useAuth();
-  const navigate = useNavigate();
+  const [confirm, setConfirm] = useState('');
+  const [localError, setLocalError] = useState('');
+  const { signUp, error, clearError } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
-    setValidationError('');
+    setLocalError('');
 
     if (!validateUCLAEmail(email)) {
-      setValidationError('Please use a UCLA email (@ucla.edu or @g.ucla.edu)');
+      setLocalError('Must be a @ucla.edu or @g.ucla.edu email.');
+      return;
+    }
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters.');
+      return;
+    }
+    if (password !== confirm) {
+      setLocalError('Passwords do not match.');
       return;
     }
 
     try {
-      await signUp(email, password, { displayName });
-      setVerificationSent(true);
+      await signUp(email, password, { displayName: fullName });
+      onNext(email);
     } catch (err) {
-      // Error handled by context
+      // handled by context
     }
   };
 
-  const handleResendVerification = async () => {
-    try {
-      await sendEmailVerification();
-      alert('Verification email resent!'); // Temporary - could make this inline too
-    } catch (err) {
-      // Error handled
-    }
+  const displayError = localError || error;
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ marginBottom: 12 }}>
+        <label style={styles.label}>Enter your full name</label>
+        <input
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="e.g. Joe Bruin"
+          required
+          style={styles.input}
+          onFocus={focusStyle}
+          onBlur={blurStyle}
+        />
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={styles.label}>Enter your UCLA email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); clearError(); }}
+          placeholder="e.g. joebruin@g.ucla.edu"
+          required
+          style={styles.input}
+          onFocus={focusStyle}
+          onBlur={blurStyle}
+        />
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={styles.label}>Create a password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Create a strong password"
+          required
+          style={styles.input}
+          onFocus={focusStyle}
+          onBlur={blurStyle}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={styles.label}>Confirm your password</label>
+        <input
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          placeholder="Re-enter your password"
+          required
+          style={styles.input}
+          onFocus={focusStyle}
+          onBlur={blurStyle}
+        />
+      </div>
+
+      {displayError && <div style={styles.error}>{displayError}</div>}
+
+      <button type="submit" style={styles.btnPrimary}>Continue</button>
+
+      <p style={styles.termsText}>
+        Secure login for @ucla.edu accounts only. By creating an account, you agree to our{' '}
+        <Link to="/terms" style={{ color: '#2774ae', textDecoration: 'underline' }}>Terms of Service</Link>.
+      </p>
+    </form>
+  );
+}
+
+// Step 2 removed - Firebase handles email verification via link, not code
+// Step 3 (Profile setup) removed - can be added as optional onboarding after email verification
+
+// ─── Main SignUpPage ──────────────────────────────────────────────────────────
+export default function SignUpPage() {
+  const navigate = useNavigate();
+
+  // After account creation, redirect to home
+  // ProtectedRoute will show email verification screen
+  const handleFormNext = () => {
+    navigate('/');
   };
 
-  // Show success state after signup
-  if (verificationSent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-ucla-blue rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">📧</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
-            <p className="text-gray-600">We sent a verification link to:</p>
-            <p className="font-semibold text-ucla-blue mt-1">{email}</p>
-          </div>
+  return (
+    <div style={styles.root}>
+      <div style={styles.bg} />
+      <div style={styles.overlay} />
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-700 mb-2">
-              <strong>Next steps:</strong>
-            </p>
-            <ol className="text-sm text-gray-600 space-y-1 ml-4 list-decimal">
-              <li>Open your UCLA email inbox</li>
-              <li>Click the verification link</li>
-              <li>Return here and log in</li>
-            </ol>
-          </div>
+      <div style={styles.inner}>
+        {/* Hero */}
+        <div style={styles.hero}>
+          <span style={styles.logo}>Bruin Bazaar</span>
+          <p style={styles.tagline}>The UCLA Student{'\n'}Marketplace.</p>
+        </div>
 
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full bg-ucla-blue text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-            >
-              Go to Login
-            </button>
+        {/* Bottom card */}
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Create your account</h2>
 
-            <button
-              onClick={handleResendVerification}
-              className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition"
-            >
-              Resend Verification Email
-            </button>
-          </div>
+          <StepForm onNext={handleFormNext} />
 
-          <p className="text-xs text-gray-500 text-center mt-6">
-            Didn't receive the email? Check your spam folder or try resending.
+          <p style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', marginTop: 16 }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: '#2774ae', fontWeight: 600, textDecoration: 'none' }}>
+              Log in
+            </Link>
           </p>
         </div>
-      </div>
-    );
-  }
-
-  // Normal signup form
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-2xl font-bold mb-2">Create Account</h1>
-        <p className="text-gray-600 mb-6">Join the BruinBazaar marketplace</p>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ucla-blue"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">UCLA Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ucla-blue"
-              placeholder="you@ucla.edu"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">Must be @ucla.edu or @g.ucla.edu</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ucla-blue"
-              placeholder="Minimum 6 characters"
-              required
-            />
-          </div>
-
-          {(error || validationError) && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error || validationError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full bg-ucla-blue text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-          >
-            Sign Up
-          </button>
-        </form>
-
-        <p className="mt-6 text-sm text-center text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-ucla-blue font-semibold hover:underline">
-            Log in
-          </Link>
-        </p>
       </div>
     </div>
   );

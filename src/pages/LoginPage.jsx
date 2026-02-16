@@ -2,6 +2,119 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
+// UCLA campus background — replace with local asset once Figma CDN expires
+const BG_IMAGE = 'https://www.figma.com/api/mcp/asset/fed63983-c0a4-4735-ad69-b7ffde3bcab8';
+
+const styles = {
+  root: {
+    position: 'relative',
+    minHeight: '100vh',
+    maxWidth: 480,
+    margin: '0 auto',
+    overflow: 'hidden',
+    backgroundColor: '#1a2a3a',
+    fontFamily: 'Inter, sans-serif',
+  },
+  bg: {
+    position: 'absolute',
+    inset: 0,
+    backgroundImage: `url(${BG_IMAGE})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center top',
+    zIndex: 0,
+  },
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(0,0,0,0.50)',
+    zIndex: 1,
+  },
+  inner: {
+    position: 'relative',
+    zIndex: 2,
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  hero: {
+    padding: '48px 28px 0',
+    flex: 1,
+  },
+  logo: {
+    fontFamily: "'Jomhuria', serif",
+    fontSize: 72,
+    color: '#fff',
+    lineHeight: 1,
+    margin: '0 0 12px',
+    display: 'block',
+  },
+  tagline: {
+    fontFamily: "'Jost', sans-serif",
+    fontSize: 26,
+    fontWeight: 400,
+    color: '#fff',
+    lineHeight: 1.3,
+    margin: 0,
+  },
+  card: {
+    background: '#fff',
+    borderRadius: '32px 32px 0 0',
+    padding: '28px 24px 40px',
+    boxShadow: '0 -8px 32px rgba(0,0,0,0.18)',
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: '#1e1e1e',
+    textAlign: 'center',
+    margin: '0 0 24px',
+  },
+  label: {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#1e1e1e',
+    marginBottom: 6,
+  },
+  input: {
+    width: '100%',
+    height: 44,
+    background: '#f2f2f2',
+    border: '0.8px solid #ebebeb',
+    borderRadius: 10,
+    padding: '0 12px',
+    fontSize: 13,
+    color: '#1e1e1e',
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: 'Inter, sans-serif',
+    transition: 'border-color 0.15s',
+  },
+  btnPrimary: {
+    width: '100%',
+    height: 46,
+    background: '#2774ae',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'Inter, sans-serif',
+    transition: 'background 0.15s',
+  },
+  error: {
+    background: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: 8,
+    padding: '8px 12px',
+    fontSize: 12,
+    color: '#dc2626',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+};
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,126 +128,100 @@ export default function LoginPage() {
       await signIn(email, password);
       navigate('/');
     } catch (err) {
-      // Error handled by context
+      // handled by context
     }
   };
 
+  const focusStyle = (e) => (e.target.style.borderColor = '#2774ae');
+  const blurStyle = (e) => (e.target.style.borderColor = '#ebebeb');
+
   return (
-    <div className="relative min-h-screen bg-gray-100">
-      {/* Background image placeholder (full screen) */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage:
-            'var(--login-hero-image, linear-gradient(135deg, #1e3a5f 0%, #2774AE 50%, #1e3a5f 100%))',
-        }}
-      />
-      <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+    <div style={styles.root}>
+      <div style={styles.bg} />
+      <div style={styles.overlay} />
 
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Hero content at top */}
-        <header className="pt-10 sm:pt-12 px-6 text-center">
-          <h1 className="font-brand text-4xl sm:text-5xl text-white tracking-wide drop-shadow-sm">
-            Bruin Bazaar
-          </h1>
-          <p className="text-white/95 text-base sm:text-lg mt-1 font-medium">
-            The UCLA Student Marketplace.
-          </p>
-        </header>
-
-        {/* Pagination dots (above the sheet) */}
-        <div className="mt-auto mb-3 flex justify-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-white" aria-current="step" />
-          <span className="w-2 h-2 rounded-full border-2 border-white/80 bg-transparent" />
-          <span className="w-2 h-2 rounded-full border-2 border-white/80 bg-transparent" />
+      <div style={styles.inner}>
+        {/* Hero */}
+        <div style={styles.hero}>
+          <span style={styles.logo}>Bruin Bazaar</span>
+          <p style={styles.tagline}>The UCLA Student{'\n'}Marketplace.</p>
         </div>
 
-        {/* Login card (bottom sheet) */}
-        <main className="px-0 sm:px-6 pb-0">
-          <div className="w-full sm:max-w-md sm:mx-auto bg-white rounded-t-3xl rounded-b-none sm:rounded-[40px] shadow-2xl shadow-black/15 overflow-hidden">
-            <div className="p-5 sm:p-7 pb-6 sm:pb-7">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-4">
-              Login to your account
-            </h2>
+        {/* Bottom card */}
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>Login to your account</h2>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-1">
-                  Email or username
-                </label>
-                <input
-                  id="email"
-                  type="text"
-                  inputMode="email"
-                  autoComplete="username"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your @ucla.edu email"
-                  className="w-full border border-gray-300 rounded-2xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ucla-blue focus:border-transparent transition"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-1">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full border border-gray-300 rounded-2xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ucla-blue focus:border-transparent transition"
-                  required
-                />
-                <div className="mt-1.5 text-right">
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-ucla-blue font-medium hover:underline underline-offset-2"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full bg-ucla-blue text-white py-3 rounded-2xl font-semibold hover:bg-[#1d5a8a] active:bg-[#164a75] transition focus:outline-none focus:ring-2 focus:ring-ucla-blue focus:ring-offset-2"
-              >
-                Sign In
-              </button>
-              </form>
-
-              <p className="mt-4 text-center text-gray-700 text-[0.65rem]">
-              Don&apos;t have an account?{' '}
-              <Link
-                to="/signup"
-                className="text-ucla-blue font-medium hover:underline underline-offset-2"
-              >
-                Sign up with your @ucla.edu email
-              </Link>
-            </p>
-
-              <p className="mt-4 text-center text-gray-600 text-xs leading-relaxed max-w-sm mx-auto">
-              Secure login for @ucla.edu accounts only. By logging in, you agree to our{' '}
-              <Link
-                to="/terms"
-                className="text-ucla-blue font-medium hover:underline underline-offset-2"
-              >
-                Terms of Service.
-              </Link>
-            </p>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={styles.label}>Email or username</label>
+              <input
+                type="text"
+                inputMode="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); clearError(); }}
+                placeholder="Enter your @ucla.edu email"
+                required
+                style={styles.input}
+                onFocus={focusStyle}
+                onBlur={blurStyle}
+              />
             </div>
-          </div>
-        </main>
+
+            <div style={{ marginBottom: 6 }}>
+              <label style={styles.label}>Password</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); clearError(); }}
+                placeholder="Enter your password"
+                required
+                style={styles.input}
+                onFocus={focusStyle}
+                onBlur={blurStyle}
+              />
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Link
+                to="/forgot-password"
+                style={{ fontSize: 12, color: '#000', textDecoration: 'underline', fontFamily: 'Inter, sans-serif' }}
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            {error && <div style={styles.error}>{error}</div>}
+
+            <button
+              type="submit"
+              style={styles.btnPrimary}
+              onMouseOver={(e) => (e.target.style.background = '#1d5a8a')}
+              onMouseOut={(e) => (e.target.style.background = '#2774ae')}
+            >
+              Sign In
+            </button>
+          </form>
+
+          <p style={{ fontSize: 10, color: '#1e1e1e', textAlign: 'center', marginTop: 16, fontWeight: 600 }}>
+            Don't have an account?{' '}
+            <Link
+              to="/signup"
+              style={{ color: '#1e1e1e', textDecoration: 'underline', fontWeight: 600 }}
+            >
+              Sign up with your @ucla.edu email
+            </Link>
+          </p>
+
+          <p style={{ fontSize: 9, color: '#858585', textAlign: 'center', marginTop: 10, lineHeight: 1.5, fontWeight: 600 }}>
+            Secure login for @ucla.edu accounts only. By logging in, you agree to our{' '}
+            <Link to="/terms" style={{ color: '#2774ae', textDecoration: 'underline' }}>
+              Terms of Service
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

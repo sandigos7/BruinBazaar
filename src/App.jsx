@@ -1,97 +1,82 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-import { useState } from 'react';
+import HomePage from './pages/HomePage';
+import ProfilePage from './pages/ProfilePage';
+import CreateListing from './pages/CreateListing';
+import ProfileSetupPage from './pages/ProfileSetupPage';
 
-// Placeholder pages 
-function HomePage() {
-  const [emojis, setEmojis] = useState([]);
-  
-  const randomEmojis = ['🐻', '💙', '💛', '🏈', '📚', '🎓', '✨', '🎉', '🔥', '⚡', '🌟', '💫', '🚀', '🎯'];
-  
-  const spawnEmojis = () => {
-    const newEmojis = Array.from({ length: 8 }, (_, i) => ({
-      id: Date.now() + i,
-      emoji: randomEmojis[Math.floor(Math.random() * randomEmojis.length)],
-      left: Math.random() * 80 + 10, // 10-90% from left
-      duration: Math.random() * 2 + 2, // 2-4 seconds
-    }));
-    
-    setEmojis(prev => [...prev, ...newEmojis]);
-    
-    // Remove emojis after animation
-    setTimeout(() => {
-      setEmojis(prev => prev.filter(e => !newEmojis.find(ne => ne.id === e.id)));
-    }, 4000);
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-ucla-blue to-blue-700 relative overflow-hidden">
-      {/* Floating emojis */}
-      {emojis.map(({ id, emoji, left, duration }) => (
-        <div
-          key={id}
-          className="absolute text-4xl pointer-events-none animate-float"
-          style={{
-            left: `${left}%`,
-            bottom: '10%',
-            animation: `float ${duration}s ease-out forwards`,
-          }}
-        >
-          {emoji}
-        </div>
-      ))}
-
-      <div className="text-center z-10">
-        <h1 className="text-5xl font-bold text-white mb-4">
-          🎉 You've Logged In! 🎉
-        </h1>
-        <p className="text-xl text-ucla-gold mb-8 max-w-md">
-          Eventually an epic UCLA marketplace will be here!
-        </p>
-        <p className="text-white mb-8 opacity-80">
-          But for now...
-        </p>
-        
-        <button
-          onClick={spawnEmojis}
-          className="bg-ucla-gold text-ucla-blue font-bold py-4 px-8 rounded-lg text-xl hover:bg-yellow-300 transform hover:scale-105 transition-all shadow-lg"
-        >
-          Click for Magic ✨
-        </button>
-        
-        <p className="text-white text-sm mt-8 opacity-60">
-          (Your designer is cooking up something amazing in Figma)
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function SearchPage() {
   return <div className="p-4">Search</div>;
-}
-
-function CreatePage() {
-  return <div className="p-4">Create Listing</div>;
 }
 
 function MessagesPage() {
   return <div className="p-4">Messages</div>;
 }
 
-function ProfilePage() {
-  return <div className="p-4">Profile</div>;
-}
-
-
-// Protected route wrapper (requires auth + email verification per PRD)
+// Protected route — requires auth + email verification
 function ProtectedRoute({ children }) {
-  const { user, loading, isEmailVerified } = useAuth();
+  const { user, loading, isEmailVerified, sendEmailVerification } = useAuth();
+  const [checking, setChecking] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  // Auto-check verification status every 3 seconds
+  useEffect(() => {
+    if (!user || isEmailVerified) return;
+
+    const checkVerification = async () => {
+      try {
+        await user.reload();
+        if (user.emailVerified) {
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error('Failed to check verification:', err);
+      }
+    };
+
+    const interval = setInterval(checkVerification, 3000);
+    return () => clearInterval(interval);
+  }, [user, isEmailVerified]);
+
+  const handleCheckNow = async () => {
+    setChecking(true);
+    try {
+      await user.reload();
+      if (user.emailVerified) {
+        window.location.reload();
+      } else {
+        setTimeout(() => setChecking(false), 1000);
+      }
+    } catch (err) {
+      console.error('Failed to check verification:', err);
+      setChecking(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setResending(true);
+    setResendSuccess(false);
+    try {
+      await sendEmailVerification();
+      setResendSuccess(true);
+    } catch (err) {
+      console.error('Failed to resend email:', err);
+    } finally {
+      setResending(false);
+    }
+  };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-ucla-blue border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (!user) {
@@ -105,32 +90,43 @@ function ProtectedRoute({ children }) {
           <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">📧</span>
           </div>
-          <h2 className="text-xl font-bold mb-2">Email Verification Required</h2>
-          <p className="text-gray-600 mb-6">
-            Please check your email and verify your account to continue.
+          <h2 className="text-xl font-bold mb-2">Verify Your Email</h2>
+          <p className="text-gray-600 mb-2">
+            We sent a verification link to:
           </p>
-          
+          <p className="text-sm font-semibold text-ucla-blue mb-6">
+            {user.email}
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Click the link in the email to verify your account. This page will automatically refresh when verified.
+          </p>
           <div className="space-y-3">
             <button
-              onClick={() => window.location.reload()}
-              className="w-full bg-ucla-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+              onClick={handleCheckNow}
+              disabled={checking}
+              className="w-full bg-ucla-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              I've Verified - Refresh Page
+              {checking ? 'Checking...' : 'I Verified — Check Now'}
             </button>
-            
             <button
-              onClick={async () => {
-                await signOut();
-                window.location.href = '/login';
-              }}
-              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition"
+              onClick={handleResendEmail}
+              disabled={resending}
+              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition disabled:opacity-50"
             >
-              Back to Login
+              {resending ? 'Sending...' : 'Resend Verification Email'}
+            </button>
+            {resendSuccess && (
+              <p className="text-sm text-green-600">Email sent! Check your inbox.</p>
+            )}
+            <button
+              onClick={() => { window.location.href = '/login'; }}
+              className="w-full text-gray-500 px-6 py-2 rounded-lg text-sm hover:text-gray-700 transition"
+            >
+              Sign Out
             </button>
           </div>
-
           <p className="text-xs text-gray-500 mt-4">
-            Didn't receive the email? Check your spam folder.
+            Didn't receive it? Check your spam folder or click resend above.
           </p>
         </div>
       </div>
@@ -166,10 +162,10 @@ function App() {
           }
         />
         <Route
-          path="/create"
+          path="/create-listing"
           element={
             <ProtectedRoute>
-              <CreatePage />
+              <CreateListing />
             </ProtectedRoute>
           }
         />
@@ -189,8 +185,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/profile-setup"
+          element={
+            <ProtectedRoute>
+              <ProfileSetupPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Catch-all redirect */}
+
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
