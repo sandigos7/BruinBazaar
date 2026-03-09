@@ -13,7 +13,3 @@ node_modules/
 .firebase/
 *-debug.log
 *-debug.log.*
-
-# Ignore specific files
-prd.md
-cursorrules.md

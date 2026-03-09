@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   root: '.',
-  envDir: '.',
+  envDir: '..',
   envPrefix: 'VITE_',
   server: {
     port: 5173,

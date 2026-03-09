@@ -2,14 +2,14 @@
   "firestore": {
     "database": "(default)",
     "location": "us-west2",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "rules": "backend/firestore.rules",
+    "indexes": "backend/firestore.indexes.json"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "backend/storage.rules"
   },
   "hosting": {
-    "public": "dist",
+    "public": "frontend/dist",
     "ignore": [
       "firebase.json",
       "**/.*",

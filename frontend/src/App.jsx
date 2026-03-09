@@ -6,15 +6,15 @@ import SignUpPage from './pages/SignUpPage';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import CreateListing from './pages/CreateListing';
+import CreateISO from './pages/CreateISO';
 import ProfileSetupPage from './pages/ProfileSetupPage';
-
+import BulletinBoardPage from './pages/BulletinBoardPage';
+import MessagesPage from './pages/MessagesPage';
+import ItemDetailPage from './pages/ItemDetailPage';
+import ChatPage from './pages/ChatPage';
 
 function SearchPage() {
   return <div className="p-4">Search</div>;
-}
-
-function MessagesPage() {
-  return <div className="p-4">Messages</div>;
 }
 
 // Protected route — requires auth + email verification
@@ -140,11 +140,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
+        {/* Public */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Protected routes */}
+        {/* Protected */}
         <Route
           path="/"
           element={
@@ -161,6 +161,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Listings */}
         <Route
           path="/create-listing"
           element={
@@ -169,11 +170,61 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* ISO */}
+        <Route path="/create-iso" element={<ProtectedRoute><CreateISO /></ProtectedRoute>} />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile-setup"
+          element={
+            <ProtectedRoute>
+              <ProfileSetupPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bulletin"
+          element={
+            <ProtectedRoute>
+              <BulletinBoardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Messages list */}
         <Route
           path="/messages"
           element={
             <ProtectedRoute>
               <MessagesPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Individual conversation — ChatPage (to be built) */}
+        <Route
+          path="/messages/:conversationId"
+          element={
+            <ProtectedRoute>
+              {/* Placeholder until ChatPage is built */}
+              <div style={{ padding: 32, fontFamily: 'Inter, sans-serif' }}>
+                Chat view coming soon.
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        {/* Item detail */}
+        <Route
+          path="/listings/:listingId"
+          element={
+            <ProtectedRoute>
+              <ItemDetailPage />
             </ProtectedRoute>
           }
         />
@@ -193,7 +244,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route path="/chat/:conversationId" element={<ChatPage />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
