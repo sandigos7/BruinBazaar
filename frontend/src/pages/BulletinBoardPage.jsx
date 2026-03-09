@@ -1,10 +1,44 @@
+/**
+ * BruinBazaar — Revamped Bulletin Board
+ * Matches Figma nodes 228:625 (Buying) and 225:307 (Selling)
+ *
+ * Two tabs on a corkboard-textured background:
+ *   • LOOKING FOR — sticky-note ISO cards with push pins
+ *   • SELLING — standard listing cards with photos
+ *
+ * Data: Fetches from Firestore `isos` and `listings` collections.
+ */
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../config/firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import BottomNav from '../components/BottomNav';
 
+// ─── Corkboard background (inline data-uri for the subtle dot texture) ───────
+const CORK_BG = `url("https://firebasestorage.googleapis.com/v0/b/bruinbazaar-4.firebasestorage.app/o/Misc%20Assets%2FAdobeStock_124824681.jpeg?alt=media&token=a39e679c-1e00-4393-ac17-c84b0878b367")`;
+
+// ─── Card colors for ISO notes (rotate through) ─────────────────────────────
+const ISO_COLORS = ['#fef9c3', '#ffdefb', '#bae1f9', '#feffff'];
+
+// ─── Push pin SVGs (simple colored circles with highlight, matching Figma) ───
+const PIN_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f97316'];
+
+function PushPin({ color = '#dc2626' }) {
+  return (
+    <svg width="24" height="28" viewBox="0 0 24 28" fill="none" style={{ display: 'block', margin: '0 auto' }}>
+      <circle cx="12" cy="10" r="8" fill={color} />
+      <circle cx="10" cy="8" r="3" fill="rgba(255,255,255,0.4)" />
+      <rect x="11" y="18" width="2" height="10" rx="1" fill="#94a3b8" />
+    </svg>
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getInitials(name = '') {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+}
 
 function timeAgo(date) {
   if (!date) return '';
@@ -15,145 +49,318 @@ function timeAgo(date) {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-function getInitials(name = '') {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
+// ─── Top Bar ─────────────────────────────────────────────────────────────────
 
-// Tag color based on type
-const TAG_STYLES = {
-  'ISO / Wanted':    { bg: '#e8f0f7', color: '#2774ae' },
-  'WANTED':         { bg: '#fffde7', color: '#b8860b' },
-  'TICKET WANTED':  { bg: '#fce4ec', color: '#c62828' },
-  'default':        { bg: '#f3e5f5', color: '#6a1b9a' },
-};
-
-// ─── ISO Card (Looking For tab) ───────────────────────────────────────────────
-
-function ISOCard({ post }) {
-  const navigate = useNavigate();
-  const tag = post.isoTag || 'ISO / Wanted';
-  const tagStyle = TAG_STYLES[tag] || TAG_STYLES.default;
-  const initials = getInitials(post.sellerName);
-
-  // Slight rotation for bulletin board feel
-  const rotation = post._rotation || 0;
-
+function TopBar({ searchQuery, onSearchChange, onSearchSubmit }) {
   return (
-    <div style={{
-      background: post.cardColor || '#fff',
-      borderRadius: 4,
-      padding: '14px 16px',
-      boxShadow: '2px 3px 8px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.1)',
-      transform: `rotate(${rotation}deg)`,
-      marginBottom: 16,
-      position: 'relative',
-      fontFamily: 'Inter, sans-serif',
-    }}>
-      {/* Tape strip at top */}
+    <div style={{ background: '#2774ae', padding: '44px 16px 12px' }}>
+      {/* Brand row */}
       <div style={{
-        position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
-        width: 48, height: 16, background: 'rgba(255,255,200,0.7)',
-        borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 12,
+      }}>
         <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.8px',
-          textTransform: 'uppercase', color: tagStyle.color,
-          background: tagStyle.bg, padding: '2px 8px', borderRadius: 4,
-        }}>{tag}</span>
-        <span style={{ fontSize: 11, color: '#94a3b8' }}>{timeAgo(post.createdAt?.toDate?.())}</span>
+          fontFamily: "'Jomhuria', serif", fontSize: 64, color: '#fff', lineHeight: 1,
+        }}>BruinBazaar</span>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button style={iconBtn}>
+            <span className="material-icons" style={{ fontSize: 24, color: '#fff' }}>shopping_cart</span>
+          </button>
+          <button style={{ ...iconBtn, position: 'relative' }}>
+            <span className="material-icons" style={{ fontSize: 24, color: '#fff' }}>notifications</span>
+            <span style={{
+              position: 'absolute', top: 0, right: 0,
+              width: 8, height: 8, borderRadius: '50%', background: '#FFD100',
+            }} />
+          </button>
+        </div>
       </div>
 
-      <p style={{ fontSize: 15, fontWeight: 700, color: '#1e1e1e', margin: '0 0 6px', lineHeight: 1.4 }}>
-        <span style={{ color: '#2774ae' }}>Looking for</span>: {post.title}
-      </p>
-      <p style={{ fontSize: 13, color: '#475569', margin: '0 0 12px', lineHeight: 1.5 }}>
-        {post.description}
-      </p>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            background: post.avatarColor || '#2774ae',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700, color: '#fff',
-          }}>{initials}</div>
-          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{post.sellerName}</span>
-        </div>
-        <button
-          onClick={() => navigate(`/messages?userId=${post.userId}&listingId=${post.id}`)}
+      {/* Search bar */}
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <span className="material-icons" style={{
+          position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+          fontSize: 20, color: '#94a3b8',
+        }}>search</span>
+        <input
+          value={searchQuery}
+          onChange={e => onSearchChange(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && onSearchSubmit?.()}
+          placeholder="Search items, textbooks, housing..."
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 700, color: '#2774ae',
-            fontFamily: 'Inter, sans-serif',
+            width: '100%', height: 40, borderRadius: 12, border: 'none',
+            paddingLeft: 40, paddingRight: 16,
+            fontSize: 14, color: '#0f172a', background: '#fff',
+            fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
+            outline: 'none',
           }}
-        >
-          Reply
-        </button>
+        />
       </div>
     </div>
   );
 }
 
-// ─── Selling Card ─────────────────────────────────────────────────────────────
+const iconBtn = {
+  background: 'none', border: 'none', cursor: 'pointer',
+  padding: 0, display: 'flex', alignItems: 'center',
+};
 
-function SellingCard({ listing }) {
-  const navigate = useNavigate();
+// ─── Tab Toggle ──────────────────────────────────────────────────────────────
+
+function TabToggle({ activeTab, onChange }) {
+  return (
+    <div style={{
+      display: 'flex',
+      background: 'rgba(255,255,255,0.15)',
+      borderRadius: 12, padding: 4,
+    }}>
+      {[
+        { key: 'looking', label: 'LOOKING FOR' },
+        { key: 'selling', label: 'SELLING' },
+      ].map(tab => (
+        <button
+          key={tab.key}
+          onClick={() => onChange(tab.key)}
+          style={{
+            flex: 1, height: 28, border: 'none', borderRadius: 8,
+            fontSize: 12, fontWeight: 700, letterSpacing: '0.5px',
+            cursor: 'pointer', transition: 'all 0.2s',
+            fontFamily: 'Inter, sans-serif',
+            background: activeTab === tab.key ? '#fff' : 'transparent',
+            color: activeTab === tab.key ? '#2774ae' : 'rgba(255,255,255,0.5)',
+          }}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── ISO Card (Looking For tab) ──────────────────────────────────────────────
+
+function ISOCard({ post, index, onClick }) {
+  const bgColor = ISO_COLORS[index % ISO_COLORS.length];
+  const pinColor = PIN_COLORS[index % PIN_COLORS.length];
+  const initials = getInitials(post.sellerName);
 
   return (
     <div
-      onClick={() => navigate(`/listing/${listing.id}`)}
+      onClick={onClick}
       style={{
-        background: '#fff',
-        borderRadius: 8,
+        background: bgColor,
+        border: '0.8px solid #f1f5f9',
+        boxShadow: '0 4px 4px rgba(0,0,0,0.25)',
         overflow: 'hidden',
-        boxShadow: '2px 3px 8px rgba(0,0,0,0.18)',
-        marginBottom: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        paddingTop: 8,
+        paddingBottom: 11,
         cursor: 'pointer',
-        fontFamily: 'Inter, sans-serif',
       }}
     >
-      {listing.imageUrl ? (
-        <img
-          src={listing.imageUrl}
-          alt={listing.title}
-          style={{ width: '100%', height: 200, objectFit: 'cover', display: 'block' }}
-        />
-      ) : (
-        <div style={{
-          width: '100%', height: 200,
-          background: '#f1f5f9',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+      {/* Push pin */}
+      <PushPin color={pinColor} />
+
+      {/* Content */}
+      <div style={{ padding: '0 12px', width: '100%', boxSizing: 'border-box' }}>
+        {/* Title */}
+        <p style={{
+          fontFamily: 'Inter, sans-serif', fontWeight: 700,
+          fontSize: 14, color: '#0f172a', lineHeight: 1.3,
+          margin: '0 0 8px', wordBreak: 'break-word',
         }}>
-          <span className="material-icons" style={{ fontSize: 48, color: '#cbd5e1' }}>image</span>
-        </div>
-      )}
-      <div style={{ padding: '10px 12px 14px' }}>
-        <p style={{ fontSize: 14, color: '#334155', margin: 0, lineHeight: 1.4 }}>
-          <strong style={{ color: '#2774ae' }}>${listing.price}</strong> – {listing.title}
+          ISO: {post.title}
         </p>
-        {listing.condition && (
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>{listing.condition}</p>
-        )}
+
+        {/* Details */}
+        <div style={{
+          fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#64748b',
+          lineHeight: 1.5, marginBottom: 8,
+        }}>
+          {post.description ? (
+            <p style={{ margin: 0 }}>{post.description.slice(0, 80)}{post.description.length > 80 ? '...' : ''}</p>
+          ) : (
+            <>
+              {post.category && <p style={{ margin: 0 }}>Category: {post.category}</p>}
+              {post.condition && <p style={{ margin: 0 }}>Condition: {post.condition}</p>}
+              {post.price != null && <p style={{ margin: 0 }}>Budget: up to ${post.price}</p>}
+            </>
+          )}
+        </div>
+
+        {/* Footer: avatar + name + reply */}
+        <div style={{
+          display: 'flex', gap: 4, alignItems: 'center',
+        }}>
+          <div style={{
+            width: 17, height: 17, borderRadius: '50%',
+            background: '#2774ae', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              fontFamily: 'Inter, sans-serif', fontWeight: 700,
+              fontSize: 7, color: '#fff',
+            }}>{initials}</span>
+          </div>
+          <span style={{
+            flex: 1, fontFamily: 'Inter, sans-serif',
+            fontSize: 11, color: '#64748b',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {post.sellerName ? `${post.sellerName.split(' ')[0]} ${(post.sellerName.split(' ')[1] || '')[0] || ''}.`.trim() : 'Bruin'}
+          </span>
+          <span style={{
+            fontFamily: 'Inter, sans-serif', fontWeight: 600,
+            fontSize: 11, color: '#2774ae',
+            textDecoration: 'underline', cursor: 'pointer',
+          }}>
+            Reply
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
+// ─── Selling Card (matches Figma 225:307) ────────────────────────────────────
+
+function SellingCard({ listing, onClick }) {
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: '#fff', borderRadius: 16,
+        border: '0.8px solid #f1f5f9',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+        overflow: 'hidden', cursor: 'pointer',
+      }}
+    >
+      {/* Image */}
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#f1f5f9' }}>
+        {(listing.imageUrl || listing.imageUrls?.[0]) ? (
+          <img
+            src={listing.imageUrl || listing.imageUrls?.[0]}
+            alt={listing.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <div style={{
+            width: '100%', height: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span className="material-icons" style={{ fontSize: 40, color: '#cbd5e1' }}>image</span>
+          </div>
+        )}
+        {/* Favorite button */}
+        <button
+          onClick={e => { e.stopPropagation(); setSaved(s => !s); }}
+          style={{
+            position: 'absolute', top: 8, right: 8,
+            background: '#fff', borderRadius: '50%', border: 'none',
+            width: 30, height: 30, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+            padding: 6,
+          }}
+        >
+          <span className="material-icons" style={{
+            fontSize: 18, color: saved ? '#ef4444' : '#475569',
+          }}>
+            {saved ? 'favorite' : 'favorite_border'}
+          </span>
+        </button>
+        {/* "New" badge — show if created within last 24h */}
+        {listing._isNew && (
+          <div style={{
+            position: 'absolute', bottom: 8, left: 8,
+            background: '#2774ae', borderRadius: 12,
+            padding: '4px 8px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 10, fontWeight: 700, color: '#fff',
+          }}>New</div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Title + price row */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14,
+        }}>
+          <span style={{
+            color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap', flex: 1, marginRight: 4,
+          }}>{listing.title}</span>
+          <span style={{ color: '#2774ae', flexShrink: 0 }}>
+            ${listing.price}
+          </span>
+        </div>
+
+        {/* Location */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span className="material-icons" style={{ fontSize: 14, color: '#94a3b8' }}>location_on</span>
+          <span style={{
+            fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#64748b',
+          }}>
+            {listing.meetupSpots?.[0] || listing.location?.address || 'On-Campus'}
+          </span>
+        </div>
+
+        {/* Footer badges */}
+        <div style={{
+          borderTop: '0.8px solid #f8fafc', paddingTop: 8,
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          {listing.verified !== false && (
+            <>
+              <span className="material-icons" style={{ fontSize: 12, color: '#ffd100' }}>verified_user</span>
+              <span style={{
+                fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#94a3b8',
+              }}>VERIFIED</span>
+            </>
+          )}
+          {listing.bruinLift && (
+            <>
+              <span className="material-icons" style={{ fontSize: 12, color: '#ffd100' }}>local_shipping</span>
+              <span style={{
+                fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#94a3b8',
+              }}>BRUIN LIFT</span>
+            </>
+          )}
+          {!listing.bruinLift && listing.verified === false && listing._timeAgo && (
+            <span style={{
+              fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#94a3b8',
+            }}>{listing._timeAgo}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty State ─────────────────────────────────────────────────────────────
 
 function EmptyState({ tab, onPost }) {
   return (
-    <div style={{ textAlign: 'center', padding: '60px 32px', fontFamily: 'Inter, sans-serif' }}>
-      <span className="material-icons" style={{ fontSize: 48, color: '#cbd5e1', display: 'block', marginBottom: 12 }}>
+    <div style={{
+      textAlign: 'center', padding: '60px 32px',
+      fontFamily: 'Inter, sans-serif',
+    }}>
+      <span className="material-icons" style={{
+        fontSize: 48, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 12,
+      }}>
         {tab === 'looking' ? 'search' : 'storefront'}
       </span>
-      <p style={{ fontSize: 16, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>
+      <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 6px' }}>
         {tab === 'looking' ? 'No ISO posts yet' : 'No listings yet'}
       </p>
-      <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: '0 0 20px' }}>
         {tab === 'looking'
           ? 'Be the first to post what you\'re looking for'
           : 'Be the first to list something for sale'}
@@ -161,7 +368,7 @@ function EmptyState({ tab, onPost }) {
       <button
         onClick={onPost}
         style={{
-          background: '#2774ae', color: '#fff', border: 'none',
+          background: '#fff', color: '#2774ae', border: 'none',
           borderRadius: 10, padding: '10px 20px',
           fontSize: 14, fontWeight: 600, cursor: 'pointer',
           fontFamily: 'Inter, sans-serif',
@@ -173,19 +380,34 @@ function EmptyState({ tab, onPost }) {
   );
 }
 
-// ─── Main BulletinBoardPage ───────────────────────────────────────────────────
+// ─── Loading Skeleton ────────────────────────────────────────────────────────
 
-// Sample ISO colors for visual variety
-const CARD_COLORS = ['#fffef0', '#fff9e6', '#f0f8ff', '#fff0f5', '#f0fff4'];
-const AVATAR_COLORS = ['#2774ae', '#e53e3e', '#38a169', '#d69e2e', '#805ad5'];
-const ISO_TAGS = ['ISO / Wanted', 'WANTED', 'TICKET WANTED'];
+function LoadingGrid() {
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr 1fr',
+      gap: 14, padding: 24,
+    }}>
+      {[1, 2, 3, 4, 5, 6].map(i => (
+        <div key={i} style={{
+          background: 'rgba(255,255,255,0.3)', borderRadius: 4,
+          height: 170,
+          animation: 'pulse 1.5s ease-in-out infinite',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main BulletinBoardPage ──────────────────────────────────────────────────
 
 export default function BulletinBoardPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('looking'); // 'looking' | 'selling'
+  const [activeTab, setActiveTab] = useState('looking');
   const [isoPosts, setIsoPosts] = useState([]);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -194,149 +416,214 @@ export default function BulletinBoardPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch ISO posts (type === 'iso')
+      // Fetch ISO posts from `isos` collection
       const isoQuery = query(
-        collection(db, 'listings'),
-        where('type', '==', 'iso'),
-        where('status', '==', 'active'),
-        orderBy('createdAt', 'desc')
+        collection(db, 'isos'),
+        where('found', '==', false),
+        orderBy('createdAt', 'desc'),
+        limit(20)
       );
       const isoSnap = await getDocs(isoQuery);
-      const isoData = isoSnap.docs.map((doc, i) => ({
+      const isoData = isoSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        cardColor: CARD_COLORS[i % CARD_COLORS.length],
-        avatarColor: AVATAR_COLORS[i % AVATAR_COLORS.length],
-        isoTag: ISO_TAGS[i % ISO_TAGS.length],
-        _rotation: (i % 3 === 0 ? -0.5 : i % 3 === 1 ? 0.5 : 0),
       }));
       setIsoPosts(isoData);
 
-      // Fetch regular listings (type !== 'iso' or no type field)
+      // Fetch listings from `listings` collection
       const listingQuery = query(
         collection(db, 'listings'),
         where('status', '==', 'active'),
-        orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'desc'),
+        limit(20)
       );
       const listingSnap = await getDocs(listingQuery);
-      const listingData = listingSnap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(l => l.type !== 'iso');
+      const now = Date.now();
+      const listingData = listingSnap.docs.map(doc => {
+        const d = doc.data();
+        const created = d.createdAt?.toDate?.();
+        return {
+          id: doc.id,
+          ...d,
+          _isNew: created ? (now - created.getTime()) < 86400000 : false,
+          _timeAgo: created ? timeAgo(created) : '',
+        };
+      });
       setListings(listingData);
     } catch (err) {
-      console.error('Error fetching bulletin board data:', err);
+      console.error('BulletinBoard fetch error:', err);
+      // If isos collection doesn't exist yet, also try listings with type=iso as fallback
+      try {
+        const fallbackIso = query(
+          collection(db, 'listings'),
+          where('type', '==', 'iso'),
+          orderBy('createdAt', 'desc'),
+          limit(20)
+        );
+        const fallbackSnap = await getDocs(fallbackIso);
+        setIsoPosts(fallbackSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch {
+        // Silently fail — empty state will show
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePost = () => navigate('/create-listing');
+  // Filter by search query (client-side for now)
+  const filteredISOs = isoPosts.filter(p =>
+    !searchQuery || p.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredListings = listings.filter(l =>
+    !searchQuery || l.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
+  <div style={{
+    minHeight: '100vh',
+    maxWidth: 480,
+    margin: '0 auto',
+    fontFamily: 'Inter, sans-serif',
+    background: '#f8fafc',
+    paddingBottom: 97,
+    position: 'relative',
+  }}>
+    {/* Entire header — sticky */}
     <div style={{
-      minHeight: '100vh',
-      maxWidth: 480,
-      margin: '0 auto',
-      fontFamily: 'Inter, sans-serif',
-      background: '#c4824a', // corkboard base
-      backgroundImage: `
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='2' cy='2' r='1' fill='rgba(0,0,0,0.08)'/%3E%3C/svg%3E")
-      `,
-      paddingBottom: 120,
-      position: 'relative',
+      background: '#2774ae',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
     }}>
+      {/* Brand row */}
+      <div style={{
+        padding: '44px 16px 12px',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: 12,
+        }}>
+          <span style={{
+            fontFamily: "'Jomhuria', serif", fontSize: 64, color: '#fff', lineHeight: 1,
+          }}>BruinBazaar</span>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button style={iconBtn}>
+              <span className="material-icons" style={{ fontSize: 24, color: '#fff' }}>shopping_cart</span>
+            </button>
+            <button style={{ ...iconBtn, position: 'relative' }}>
+              <span className="material-icons" style={{ fontSize: 24, color: '#fff' }}>notifications</span>
+              <span style={{
+                position: 'absolute', top: 0, right: 0,
+                width: 8, height: 8, borderRadius: '50%', background: '#FFD100',
+              }} />
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {/* Header */}
-      <div style={{ background: '#2774ae', padding: '44px 16px 0', position: 'sticky', top: 0, zIndex: 50 }}>
-        {/* Top bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-          <span style={{ fontFamily: "'Jomhuria', serif", fontSize: 40, color: '#fff', lineHeight: 1 }}>
-            BruinBazaar
-          </span>
-          <div style={{ display: 'flex', gap: 16 }}>
-            {['search', 'shopping_cart', 'notifications'].map(icon => (
-              <span key={icon} className="material-icons" style={{ fontSize: 24, color: '#fff', cursor: 'pointer' }}>{icon}</span>
+      {/* Search bar */}
+      <div style={{
+        padding: '0 16px 12px',
+      }}>
+        <div style={{ position: 'relative' }}>
+          <span className="material-icons" style={{
+            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+            fontSize: 20, color: '#94a3b8',
+          }}>search</span>
+          <input
+            value={searchQuery}
+            onChange={e => onSearchChange(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && onSearchSubmit?.()}
+            placeholder="Search items, textbooks, housing..."
+            style={{
+              width: '100%', height: 40, borderRadius: 12, border: 'none',
+              paddingLeft: 40, paddingRight: 16,
+              fontSize: 14, color: '#0f172a', background: '#fff',
+              fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
+              outline: 'none',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Tab toggle */}
+      <div style={{
+        padding: '0 16px 16px',
+      }}>
+        <TabToggle activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+    </div>
+
+    {/* Corkboard content area */}
+    <div style={{
+      background: '#c4824a',
+      backgroundImage: CORK_BG,
+      backgroundSize: '1367px 2048px',
+      minHeight: 'calc(100vh - 260px)',
+      padding: 24,
+    }}>
+      {loading ? (
+        <LoadingGrid />
+      ) : activeTab === 'looking' ? (
+        /* ── LOOKING FOR tab ── */
+        filteredISOs.length === 0 ? (
+          <EmptyState tab="looking" onPost={() => navigate('/create-iso')} />
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '14px 17px',
+          }}>
+            {filteredISOs.map((post, i) => (
+              <ISOCard
+                key={post.id}
+                post={post}
+                index={i}
+                onClick={() => {
+                  // Navigate to ISO detail or open reply
+                  // For now, we could navigate to a messages flow
+                }}
+              />
             ))}
           </div>
-        </div>
-
-        {/* Tab toggle */}
-        <div style={{
-          display: 'flex', margin: '12px 0 0',
-          background: 'rgba(255,255,255,0.15)',
-          borderRadius: 10, padding: 4,
-        }}>
-          {[
-            { key: 'looking', label: 'LOOKING FOR' },
-            { key: 'selling', label: 'SELLING' },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                flex: 1, height: 36, border: 'none', borderRadius: 8,
-                fontSize: 13, fontWeight: 700, letterSpacing: '0.5px',
-                cursor: 'pointer', transition: 'all 0.2s',
-                fontFamily: 'Inter, sans-serif',
-                background: activeTab === tab.key ? '#fff' : 'transparent',
-                color: activeTab === tab.key ? '#2774ae' : 'rgba(255,255,255,0.8)',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Corkboard edge */}
-        <div style={{ height: 8, background: '#b5722a', marginTop: 0 }} />
-      </div>
-
-      {/* Content */}
-      <div style={{ padding: '20px 16px 0' }}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              border: '3px solid rgba(255,255,255,0.3)',
-              borderTopColor: '#fff',
-              animation: 'spin 0.8s linear infinite',
-            }} />
-          </div>
-        ) : activeTab === 'looking' ? (
-          isoPosts.length === 0
-            ? <EmptyState tab="looking" onPost={handlePost} />
-            : isoPosts.map(post => <ISOCard key={post.id} post={post} />)
+        )
+      ) : (
+        /* ── SELLING tab ── */
+        filteredListings.length === 0 ? (
+          <EmptyState tab="selling" onPost={() => navigate('/create-listing')} />
         ) : (
-          listings.length === 0
-            ? <EmptyState tab="selling" onPost={handlePost} />
-            : listings.map(listing => <SellingCard key={listing.id} listing={listing} />)
-        )}
-      </div>
-
-      {/* Floating post button */}
-      <button
-        onClick={handlePost}
-        style={{
-          position: 'fixed',
-          bottom: 100,
-          right: 'max(16px, calc(50vw - 240px + 16px))',
-          width: 52, height: 52,
-          borderRadius: '50%',
-          background: '#2774ae',
-          border: 'none',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', zIndex: 40,
-        }}
-      >
-        <span className="material-icons" style={{ fontSize: 24, color: '#fff' }}>edit</span>
-      </button>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-
-      <BottomNav />
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '20px 17px',
+          }}>
+            {filteredListings.map(listing => (
+              <SellingCard
+                key={listing.id}
+                listing={listing}
+                onClick={() => navigate(`/listings/${listing.id}`)}
+              />
+            ))}
+          </div>
+        )
+      )}
     </div>
-  );
+
+    <style>{`
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.7; }
+      }
+    `}</style>
+
+    <BottomNav />
+  </div>
+);
 }

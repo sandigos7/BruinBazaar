@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+
+// Pages
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import HomePage from './pages/HomePage';
@@ -12,10 +14,12 @@ import BulletinBoardPage from './pages/BulletinBoardPage';
 import MessagesPage from './pages/MessagesPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import ChatPage from './pages/ChatPage';
-
-function SearchPage() {
-  return <div className="p-4">Search</div>;
-}
+import SearchPage from './pages/SearchPage';
+import MyListingsPage from './pages/MyListingsPage';
+import PurchaseHistoryPage from './pages/PurchaseHistoryPage';
+import CartPage from './pages/CartPage';
+import PaymentMethodsPage from './pages/PaymentMethodsPage';
+import HelpCenterPage from './pages/HelpCenterPage';
 
 // Protected route — requires auth + email verification
 function ProtectedRoute({ children }) {
@@ -140,113 +144,37 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
+        {/* ── Public ── */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Protected */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <ProtectedRoute>
-              <SearchPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Listings */}
-        <Route
-          path="/create-listing"
-          element={
-            <ProtectedRoute>
-              <CreateListing />
-            </ProtectedRoute>
-          }
-        />
-        {/* ISO */}
+        {/* ── Protected: Core ── */}
+        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+        <Route path="/bulletin" element={<ProtectedRoute><BulletinBoardPage /></ProtectedRoute>} />
+
+        {/* ── Protected: Create ── */}
+        <Route path="/create-listing" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
         <Route path="/create-iso" element={<ProtectedRoute><CreateISO /></ProtectedRoute>} />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile-setup"
-          element={
-            <ProtectedRoute>
-              <ProfileSetupPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bulletin"
-          element={
-            <ProtectedRoute>
-              <BulletinBoardPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* ── Protected: Listings ── */}
+        <Route path="/listings/:listingId" element={<ProtectedRoute><ItemDetailPage /></ProtectedRoute>} />
 
-        {/* Messages list */}
-        <Route
-          path="/messages"
-          element={
-            <ProtectedRoute>
-              <MessagesPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Individual conversation — ChatPage (to be built) */}
-        <Route
-          path="/messages/:conversationId"
-          element={
-            <ProtectedRoute>
-              {/* Placeholder until ChatPage is built */}
-              <div style={{ padding: 32, fontFamily: 'Inter, sans-serif' }}>
-                Chat view coming soon.
-              </div>
-            </ProtectedRoute>
-          }
-        />
-        {/* Item detail */}
-        <Route
-          path="/listings/:listingId"
-          element={
-            <ProtectedRoute>
-              <ItemDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile-setup"
-          element={
-            <ProtectedRoute>
-              <ProfileSetupPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/chat/:conversationId" element={<ChatPage />} />
+        {/* ── Protected: Messages ── */}
+        <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+        <Route path="/messages/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+        <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 
-        {/* Catch-all */}
+        {/* ── Protected: Profile & Sub-screens ── */}
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
+        <Route path="/my-listings" element={<ProtectedRoute><MyListingsPage /></ProtectedRoute>} />
+        <Route path="/purchases" element={<ProtectedRoute><PurchaseHistoryPage /></ProtectedRoute>} />
+        <Route path="/saved" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+        <Route path="/payments" element={<ProtectedRoute><PaymentMethodsPage /></ProtectedRoute>} />
+        <Route path="/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+
+        {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
