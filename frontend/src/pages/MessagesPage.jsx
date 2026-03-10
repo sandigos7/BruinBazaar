@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getConversations } from '../services/chatService';
 import BottomNav from '../components/BottomNav';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 // ─── Top Bar ────────────────────────────────────────────────────────────────
 
@@ -410,38 +412,47 @@ export default function MessagesPage() {
     if (!user?.uid) return;
 
     const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const raw = await getConversations(user.uid);
+  try {
+    setLoading(true);
+    setError(null);
+    const raw = await getConversations(user.uid);
 
-        // Enrich with role + placeholder other-user info
-        // In production you'd batch-fetch user profiles; here we infer from listingTitle
-        const enriched = raw.map((conv) => {
-          const isSeller = conv.participants[0] === user.uid
-            ? conv.sellerId === user.uid
-            : conv.sellerId === user.uid;
-          const role = isSeller ? 'Selling' : 'Buying';
-          const otherUserId = conv.participants.find((id) => id !== user.uid);
-          return {
-            ...conv,
-            role,
-            otherUserId,
-            otherUserName: conv.otherUserName || 'UCLA Student',
-            otherUserPhoto: conv.otherUserPhoto || null,
-            listingPhoto: conv.listingPhoto || null,
-          };
-        });
+    const enriched = await Promise.all(raw.map(async (conv) => {
+      const otherUserId = conv.participants.find((id) => id !== user.uid);
+      const role = conv.sellerId === user.uid ? 'Selling' : 'Buying';
+      
+      let otherUserName = conv.otherUserName || 'UCLA Student';
+      let otherUserPhoto = conv.otherUserPhoto || null;
 
-        setConversations(enriched);
-      } catch (err) {
-        console.error('MessagesPage load:', err);
-        setError('Failed to load messages. Pull to refresh.');
-      } finally {
-        setLoading(false);
+      if (otherUserId) {
+        try {
+          const userSnap = await getDoc(doc(db, 'users', otherUserId));
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            otherUserName = userData.displayName || userData.name || otherUserName;
+            otherUserPhoto = userData.photoURL || otherUserPhoto;
+          }
+        } catch {}
       }
-    };
 
+      return {
+        ...conv,
+        role,
+        otherUserId,
+        otherUserName,
+        otherUserPhoto,
+        listingPhoto: conv.listingPhoto || null,
+      };
+    }));
+
+    setConversations(enriched);
+  } catch (err) {
+    console.error('MessagesPage load:', err);
+    setError('Failed to load messages. Pull to refresh.');
+  } finally {
+    setLoading(false);
+  }
+};
     load();
   }, [user?.uid]);
 

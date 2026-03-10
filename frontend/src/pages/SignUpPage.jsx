@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { validateUCLAEmail } from '../services/authService';
 
-const BG_IMAGE = 'https://www.figma.com/api/mcp/asset/fed63983-c0a4-4735-ad69-b7ffde3bcab8';
+const BG_IMAGE = 'https://wp.dailybruin.com/images/2025/03/web.breaking.inperson.jpg';
 
 const styles = {
   root: {

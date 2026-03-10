@@ -20,6 +20,8 @@ import PurchaseHistoryPage from './pages/PurchaseHistoryPage';
 import CartPage from './pages/CartPage';
 import PaymentMethodsPage from './pages/PaymentMethodsPage';
 import HelpCenterPage from './pages/HelpCenterPage';
+import ComingSoonPage from './pages/ComingSoonPage';
+
 
 // Protected route — requires auth + email verification
 function ProtectedRoute({ children }) {
@@ -173,6 +175,10 @@ function App() {
         <Route path="/saved" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
         <Route path="/payments" element={<ProtectedRoute><PaymentMethodsPage /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+
+        {/* coming soon */}
+        <Route path="/coming-soon" element={<ComingSoonPage />} />
+
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />

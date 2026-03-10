@@ -12,5 +12,8 @@
   },
   "workspaces": [
     "frontend"
-  ]
+  ],
+  "devDependencies": {
+    "vite-plugin-pwa": "^1.2.0"
+  }
 }

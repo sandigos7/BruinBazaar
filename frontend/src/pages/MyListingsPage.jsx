@@ -8,8 +8,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../config/firebase';
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit, doc, updateDoc } from 'firebase/firestore';
 import BottomNav from '../components/BottomNav';
+import { deleteListing } from '../services/listingsService';
+import { deleteISO } from '../services/isoService';
 
 const TABS = ['Active', 'Sold', 'ISO'];
 
@@ -59,10 +61,10 @@ function TabBar({ active, onChange }) {
   );
 }
 
-function ListingRow({ listing, isSold, onEdit, onView }) {
+function ListingRow({ listing, isSold, isISO, navigate, user }) {
   const statusColor = isSold ? '#94a3b8' : '#16a34a';
-  const statusLabel = isSold ? 'Sold' : listing.status === 'pending' ? 'Pending' : 'Active';
-  const statusBg = isSold ? '#f1f5f9' : statusLabel === 'Pending' ? '#fff7ed' : '#f0fdf4';
+  const statusLabel = isSold ? 'Sold' : isISO ? 'ISO' : listing.status === 'pending' ? 'Pending' : 'Active';
+  const statusBg = isSold ? '#f1f5f9' : isISO ? '#eff6ff' : statusLabel === 'Pending' ? '#fff7ed' : '#f0fdf4';
 
   return (
     <div style={{
@@ -71,7 +73,6 @@ function ListingRow({ listing, isSold, onEdit, onView }) {
       display: 'flex', gap: 12,
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {/* Status badge */}
         <span style={{
           display: 'inline-block', alignSelf: 'flex-start',
           background: statusBg, color: statusColor,
@@ -79,60 +80,56 @@ function ListingRow({ listing, isSold, onEdit, onView }) {
           fontSize: 11, padding: '2px 8px', borderRadius: 4,
         }}>{statusLabel}</span>
 
-        {/* Title */}
         <span style={{
           fontFamily: 'Inter, sans-serif', fontWeight: 700,
           fontSize: 16, color: '#0f172a',
         }}>{listing.title}</span>
 
-        {/* Details */}
         <span style={{
           fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#94a3b8',
         }}>
-          ${listing.price}
-          {listing.condition ? ` \u00B7 ${listing.condition}` : ''}
+          {listing.price != null ? `$${listing.price}` : ''}
+          {listing.condition ? ` · ${listing.condition}` : ''}
         </span>
 
-        {/* Actions */}
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          {!isSold && (
-            <button onClick={() => onEdit?.(listing)} style={{
-              display: 'flex', gap: 6, alignItems: 'center',
+          {!isSold && !isISO && (
+            <button onClick={() => navigate(`/listings/${listing.id}`)} style={{
               padding: '6px 14px', borderRadius: 8,
               background: '#2774ae', border: 'none', cursor: 'pointer',
             }}>
-              <span className="material-icons" style={{ fontSize: 14, color: '#fff' }}>edit</span>
-              <span style={{
-                fontFamily: 'Inter, sans-serif', fontWeight: 600,
-                fontSize: 13, color: '#fff',
-              }}>Edit</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13, color: '#fff' }}>View</span>
             </button>
           )}
-          {listing._hasOffer && (
-            <button onClick={() => onView?.(listing)} style={{
-              display: 'flex', gap: 6, alignItems: 'center',
+          {!isSold && !isISO && (
+            <button onClick={async () => {
+              if (!window.confirm('Mark this listing as sold?')) return;
+              await updateDoc(doc(db, 'listings', listing.id), { status: 'sold', sold: true });
+              window.location.reload();
+            }} style={{
               padding: '6px 14px', borderRadius: 8,
-              background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer',
+              background: '#16a34a', border: 'none', cursor: 'pointer',
             }}>
-              <span className="material-icons" style={{ fontSize: 14, color: '#475569' }}>chat</span>
-              <span style={{
-                fontFamily: 'Inter, sans-serif', fontWeight: 600,
-                fontSize: 13, color: '#475569',
-              }}>View Offer</span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13, color: '#fff' }}>Mark Sold</span>
             </button>
           )}
-          <button style={{
-            width: 36, height: 36, borderRadius: 8,
-            background: '#f8fafc', border: '1px solid #e2e8f0',
-            cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
+          <button onClick={async () => {
+            if (!window.confirm(`Delete this ${isISO ? 'ISO post' : 'listing'}?`)) return;
+            if (isISO) {
+              await deleteISO(listing.id, user.uid, listing.imageUrls);
+            } else {
+              await deleteListing(listing.id, user.uid, listing.imageUrls);
+            }
+            window.location.reload();
+          }} style={{
+            padding: '6px 14px', borderRadius: 8,
+            background: '#fee2e2', border: 'none', cursor: 'pointer',
           }}>
-            <span className="material-icons" style={{ fontSize: 18, color: '#94a3b8' }}>more_horiz</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13, color: '#ef4444' }}>Delete</span>
           </button>
         </div>
       </div>
 
-      {/* Thumbnail */}
       <div style={{
         width: 110, height: 110, borderRadius: 12, overflow: 'hidden',
         background: '#f1f5f9', flexShrink: 0,
@@ -190,7 +187,6 @@ export default function MyListingsPage() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        // Fetch user's listings
         const lq = query(
           collection(db, 'listings'),
           where('userId', '==', user.uid),
@@ -200,7 +196,6 @@ export default function MyListingsPage() {
         const lSnap = await getDocs(lq);
         setListings(lSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-        // Fetch user's ISOs
         const iq = query(
           collection(db, 'isos'),
           where('userId', '==', user.uid),
@@ -252,8 +247,9 @@ export default function MyListingsPage() {
               key={item.id}
               listing={item}
               isSold={activeTab === 'Sold'}
-              onEdit={() => navigate(`/listings/${item.id}`)}
-              onView={() => navigate(`/listings/${item.id}`)}
+              isISO={activeTab === 'ISO'}
+              navigate={navigate}
+              user={user}
             />
           ))
         )}

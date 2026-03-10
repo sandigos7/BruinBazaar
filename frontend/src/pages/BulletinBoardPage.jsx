@@ -539,8 +539,8 @@ export default function BulletinBoardPage() {
           }}>search</span>
           <input
             value={searchQuery}
-            onChange={e => onSearchChange(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && onSearchSubmit?.()}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
             placeholder="Search items, textbooks, housing..."
             style={{
               width: '100%', height: 40, borderRadius: 12, border: 'none',

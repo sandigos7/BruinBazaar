@@ -37,7 +37,7 @@ function formatTimeAgo(date) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-// ─── Listing Card (matches Figma exactly) ────────────────────────────────────
+// ─── Listing Card ────────────────────────────────────────────────────────────
 
 function ListingCard({ listing, onClick }) {
   const [saved, setSaved] = useState(false);
@@ -51,7 +51,6 @@ function ListingCard({ listing, onClick }) {
       overflow: 'hidden', cursor: 'pointer',
       width: '100%',
     }}>
-      {/* Image */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#f1f5f9' }}>
         {(listing.imageUrl || listing.imageUrls?.[0]) ? (
           <img
@@ -67,7 +66,6 @@ function ListingCard({ listing, onClick }) {
             <span className="material-icons" style={{ fontSize: 40, color: '#cbd5e1' }}>image</span>
           </div>
         )}
-        {/* Favorite */}
         <button
           onClick={e => { e.stopPropagation(); setSaved(s => !s); }}
           style={{
@@ -82,7 +80,6 @@ function ListingCard({ listing, onClick }) {
             fontSize: 18, color: saved ? '#ef4444' : '#475569',
           }}>{saved ? 'favorite' : 'favorite_border'}</span>
         </button>
-        {/* New badge */}
         {isNew && (
           <div style={{
             position: 'absolute', bottom: 8, left: 8,
@@ -94,9 +91,7 @@ function ListingCard({ listing, onClick }) {
         )}
       </div>
 
-      {/* Info */}
       <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Title + price */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
           fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14,
@@ -108,7 +103,6 @@ function ListingCard({ listing, onClick }) {
           <span style={{ color: '#2774ae', flexShrink: 0 }}>${listing.price}</span>
         </div>
 
-        {/* Location */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span className="material-icons" style={{ fontSize: 14, color: '#94a3b8' }}>location_on</span>
           <span style={{
@@ -116,7 +110,6 @@ function ListingCard({ listing, onClick }) {
           }}>{listing.meetupSpots?.[0] || 'On-Campus'}</span>
         </div>
 
-        {/* Footer */}
         <div style={{
           borderTop: '0.8px solid #f8fafc', paddingTop: 8,
           display: 'flex', alignItems: 'center', gap: 4,
@@ -142,7 +135,7 @@ function ListingCard({ listing, onClick }) {
 
 // ─── My Tacks Card ───────────────────────────────────────────────────────────
 
-function TacksCard({ title, lookingFor, selling, bgColor, onTap }) {
+function TacksCard({ title, lookingFor, selling, bgColor, onTap, onEdit }) {
   return (
     <div
       onClick={onTap}
@@ -157,20 +150,20 @@ function TacksCard({ title, lookingFor, selling, bgColor, onTap }) {
         boxShadow: '0 4px 4px rgba(0,0,0,0.25)',
       }}
     >
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: '#000' }}>
           {title}
         </span>
-        <span style={{
-          fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 10,
-          color: '#2774ae', textDecoration: 'underline', cursor: 'pointer',
-        }}>Edit</span>
+        <span
+          onClick={e => { e.stopPropagation(); onEdit?.(); }}
+          style={{
+            fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 10,
+            color: '#2774ae', textDecoration: 'underline', cursor: 'pointer',
+          }}
+        >Edit</span>
       </div>
 
-      {/* Two columns */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-        {/* Looking For */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb' }} />
@@ -178,15 +171,14 @@ function TacksCard({ title, lookingFor, selling, bgColor, onTap }) {
               fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 10, color: '#2563eb',
             }}>LOOKING FOR</span>
           </div>
-          {lookingFor.map(item => (
-            <div key={item} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          {lookingFor.map((item, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <span style={{ color: '#94a3b8', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>•</span>
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 14, color: '#334155' }}>{item}</span>
             </div>
           ))}
         </div>
 
-        {/* Selling */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#d97706' }} />
@@ -194,8 +186,8 @@ function TacksCard({ title, lookingFor, selling, bgColor, onTap }) {
               fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 10, color: '#d97706',
             }}>SELLING</span>
           </div>
-          {selling.map(item => (
-            <div key={item} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          {selling.map((item, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <span style={{ color: '#94a3b8', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>•</span>
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 14, color: '#334155' }}>{item}</span>
             </div>
@@ -203,7 +195,6 @@ function TacksCard({ title, lookingFor, selling, bgColor, onTap }) {
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{ borderTop: '0.8px solid #f8fafc', paddingTop: 8, textAlign: 'center' }}>
         <span style={{
           fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 10,
@@ -222,11 +213,41 @@ export default function HomePage() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userTacks, setUserTacks] = useState({ lookingFor: [], selling: [] });
   const user = auth.currentUser;
 
   useEffect(() => {
     fetchListings();
   }, [activeCategory]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchTacks = async () => {
+      try {
+        const [isoSnap, listingSnap] = await Promise.all([
+          getDocs(query(
+            collection(db, 'isos'),
+            where('userId', '==', user.uid),
+            where('found', '==', false),
+            limit(3)
+          )),
+          getDocs(query(
+            collection(db, 'listings'),
+            where('userId', '==', user.uid),
+            where('status', '==', 'active'),
+            limit(3)
+          )),
+        ]);
+        setUserTacks({
+          lookingFor: isoSnap.docs.map(d => d.data().title),
+          selling: listingSnap.docs.map(d => d.data().title),
+        });
+      } catch (err) {
+        console.error('Tacks fetch:', err);
+      }
+    };
+    fetchTacks();
+  }, [user]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -264,7 +285,6 @@ export default function HomePage() {
       setListings(data);
     } catch (err) {
       console.error('Error fetching listings:', err);
-      // Fallback: try without status filter (for existing data that may not have status)
       try {
         const fallback = query(
           collection(db, 'listings'),
@@ -299,8 +319,11 @@ export default function HomePage() {
       paddingBottom: 100,
     }}>
       {/* ── Header ── */}
-      <div style={{ background: '#2774ae', padding: '44px 16px 16px' }}>
-        {/* Brand row */}
+      <div style={{
+        background: '#2774ae', padding: '44px 16px 16px',
+        position: 'sticky', top: 0, zIndex: 50,
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+      }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 16,
@@ -309,7 +332,7 @@ export default function HomePage() {
             fontFamily: "'Jomhuria', serif", fontSize: 64, color: '#fff', lineHeight: 1,
           }}>BruinBazaar</span>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button style={iconBtn} onClick={() => navigate('/saved')}>
+            <button style={iconBtn} onClick={() => navigate('/coming-soon')}>
               <span className="material-icons" style={{ fontSize: 24, color: '#fff' }}>shopping_cart</span>
             </button>
             <button style={{ ...iconBtn, position: 'relative' }}>
@@ -321,7 +344,6 @@ export default function HomePage() {
             </button>
           </div>
         </div>
-        {/* Search bar */}
         <div style={{ position: 'relative' }}>
           <span className="material-icons" style={{
             position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
@@ -383,7 +405,7 @@ export default function HomePage() {
         }}>View All</button>
       </div>
 
-      {/* ── My Tacks (horizontal scroll on corkboard) ── */}
+      {/* ── My Tacks ── */}
       <div style={{
         background: '#c4824a',
         backgroundImage: CORK_BG,
@@ -397,18 +419,11 @@ export default function HomePage() {
       }}>
         <TacksCard
           title="My Tacks"
-          lookingFor={['LS 7C Textbook', 'Vintage Nikon F3', 'Coffee Table']}
-          selling={['Vintage Jacket', 'Coffee Maker', 'Retro Sneakers']}
+          lookingFor={userTacks.lookingFor.length > 0 ? userTacks.lookingFor : ['Nothing yet — post an ISO!']}
+          selling={userTacks.selling.length > 0 ? userTacks.selling : ['Nothing yet — create a listing!']}
           bgColor="#eff6ff"
           onTap={() => navigate('/bulletin')}
-        />
-        {/* Second card shows other users' tacks (friend tacks, community) */}
-        <TacksCard
-          title="Community Tacks"
-          lookingFor={['Desk Lamp', 'Mini Fridge', 'TI-84 Calculator']}
-          selling={['UCLA Hoodie', 'OChem Textbook', 'Bluetooth Speaker']}
-          bgColor="#fffbeb"
-          onTap={() => navigate('/bulletin')}
+          onEdit={() => navigate('/my-listings')}
         />
       </div>
 

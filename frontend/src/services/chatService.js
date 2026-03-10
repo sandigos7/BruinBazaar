@@ -89,13 +89,15 @@ export async function getOrCreateConversation(buyerId, sellerId, listingId, list
     }
 
     const docData = {
-      participants,
-      listingId,
-      listingTitle,
-      lastMessage: '',
-      lastMessageTime: serverTimestamp(),
-      unreadBy: [],
-    };
+  participants,
+  buyerId,
+  sellerId,
+  listingId,
+  listingTitle,
+  lastMessage: '',
+  lastMessageTime: serverTimestamp(),
+  unreadBy: [],
+};
     const docRef = await addDoc(colRef, docData);
     return { id: docRef.id, ...docData };
   } catch (err) {

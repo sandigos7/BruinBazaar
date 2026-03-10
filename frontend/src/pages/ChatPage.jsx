@@ -312,11 +312,11 @@ export default function ChatPage() {
           flex: 1, background: '#fff',
           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
           display: 'flex', flexDirection: 'column',
-          overflow: 'hidden', paddingBottom: 97,
+          overflow: 'visible', paddingBottom: 97,
         }}>
 
           {/* Chat header */}
-          <div style={{ borderBottom: '1px solid #F1F5F9', padding: '8px 16px 9px', flexShrink: 0 }}>
+          <div style={{ borderBottom: '1px solid #F1F5F9', padding: '8px 16px 9px', flexShrink: 0, position: 'sticky', top: 0, background: '#fff', zIndex: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <button onClick={() => navigate(-1)} style={iconBtnStyle} aria-label="Go back">
@@ -420,11 +420,12 @@ export default function ChatPage() {
           </div>
 
           {/* Footer */}
-          <div style={{
-            borderTop: '1px solid #F1F5F9', background: '#fff',
-            padding: '16px 16px 24px', flexShrink: 0,
-            display: 'flex', flexDirection: 'column', gap: 12,
-          }}>
+<div style={{
+  borderTop: '1px solid #F1F5F9', background: '#fff',
+  padding: '16px 16px 24px', flexShrink: 0,
+  display: 'flex', flexDirection: 'column', gap: 12,
+  position: 'sticky', bottom: 90,
+}}>
             <button
               onClick={handleRequestMeetup}
               style={{

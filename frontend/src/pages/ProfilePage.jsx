@@ -210,19 +210,19 @@ export default function ProfilePage() {
             icon="favorite"
             iconBg="#fef2f2"
             label="Saved Items"
-            onClick={() => navigate('/saved')}
+            onClick={() => navigate('/coming-soon')}
           />
           <MenuRow
             icon="receipt_long"
             iconBg="#f0fdf4"
             label="Purchase History"
-            onClick={() => navigate('/purchases')}
+            onClick={() => navigate('/coming-soon')}
           />
           <MenuRow
             icon="credit_card"
             iconBg="#faf5ff"
             label="Payment Methods"
-            onClick={() => navigate('/payments')}
+            onClick={() => navigate('/coming-soon')}
           />
         </div>
       </div>
@@ -237,7 +237,7 @@ export default function ProfilePage() {
             icon="help_outline"
             iconBg="#f8fafc"
             label="Help Center"
-            onClick={() => navigate('/help')}
+            onClick={() => navigate('/coming-soon')}
           />
           <button
             onClick={handleLogout}

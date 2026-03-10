@@ -749,7 +749,7 @@ export default function ItemDetailPage() {
             }}
           >
             {/* Photo carousel */}
-            <PhotoCarousel photos={listing.photos} />
+            <PhotoCarousel photos={listing.imageUrls || (listing.imageUrl ? [listing.imageUrl] : [])} />
 
             {/* Info section */}
             <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
